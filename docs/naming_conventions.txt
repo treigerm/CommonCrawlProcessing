@@ -1,0 +1,8 @@
+For raw files:
+{language_code}.{crawl_year}.{part_number}.raw.xz
+
+For deduped files:
+{language_code}.deduped.xz
+
+For language models:
+

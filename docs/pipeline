@@ -1,0 +1,31 @@
+Different stages:
+
+1. Download:
+- Resulting files can be used for: collecting monolingual data
+- Parameters: crawlname, output directory, (sshloginfile)
+
+2. Collect monolingual data:
+- File transformation: .gz -> .gz
+  -> We use .gz as a result since it is much faster in compression
+- Resulting files can be used for: deduplication and raw files
+- Parameters: languages, input directory, output directory, (sshloginfile)
+
+- Run through each folder an split data according to language
+- We might have to fix data that is broken
+
+3. Create raw files:
+- File transformation: Anything -> .xz
+  -> NOTE: compression with xz takes a long time.
+- Resulting files can be used for: None
+- Parameters: languages, input directory, output directory, (sshloginfile)
+
+- For non-en: Merge all the files from step (2)
+- Possible to do this step after step (4) since compression takes a long time
+
+4. Create Deduped files:
+- File transformation: Anything -> .xz
+- Resulting files can be used for: None
+- Parameters: languages, files for input, previous deduped file, output directory, (sshloginfile)
+
+- Can run deduper on files from step (2)
+

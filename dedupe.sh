@@ -16,7 +16,6 @@ LANGUAGE="$3"
 # There are two possible candidates for the name of the already existing deduped file.
 DEDUPEDFILE_1="${DEDUPED_DIR}/${LANGUAGE}.deduped.xz"
 DEDUPEDFILE_2="${DEDUPED_DIR}/${LANGUAGE}.xz"
-echo "${DEDUPEDFILE_1}"
 
 OUTFILE="${OUTDIR}/${LANGUAGE}.deduped.xz"
 DONEFILE="${OUTFILE}.done"

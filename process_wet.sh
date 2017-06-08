@@ -9,7 +9,7 @@ PARALLELJOBS=8
 
 # Locations of executables.
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
-DEDUPED_BIN=/home/tim/commoncrawl/deduped.sh
+DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
 
 # Parse arguments. Taken from
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
@@ -50,13 +50,39 @@ while [[ $# -gt 1 ]]; do
     shift # past argument or value
 done
 
+#echo $MONOLINGUAL_IN
+#echo $MONOLINGUAL_OUT
+#echo $DEDUPED_OUT
+#echo $LANGUAGESFILE
+#echo $SSHLOGINFILE
+#exit 0
+
+if [[ ${SSHLOGINFILE} ]]; then
+    PARALLEL_OPTIONS="--nice 19 --progress --sshloginfile ${SSHLOGINFILE} -j ${PARALLELJOBS}"
+else
+    PARALLEL_OPTIONS="--nice 19 --progress -j ${PARALLELJOBS}"
+fi
+
+COMMAND="
+ls --hide=wet.* ${MONOLINGUAL_IN} | \
+    parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} ${MONOLINGUAL_IN}/{} ${MONOLINGUAL_OUT}/{}
+"
 
 # Create monolingual data.
-ls hide=wet.* "${MONOLINGUAL_IN}" | \
-    parallel --nice 19 --progress --sshloginfile "${SSHLOGINFILE}" -j "${PARALLELJOBS}" \
-             ${MONOLINGUAL_BIN} "${MONOLINGUAL_IN}"/{} "${MONOLINGUAL_OUT}"/{}
+echo "Extracting monolingual data.."
+ls --hide=wet.* "${MONOLINGUAL_IN}" | \
+    parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${MONOLINGUAL_IN}"/{} "${MONOLINGUAL_OUT}"/{}
+
+# TODO: Implement sharding capability.
+# NOTE: Pseudo code for sharder:
+# Get all monolingual out and pipe it into sharder
+# use parallel to shard different files on different machines
+
+# Description of the location of all files.
+MONO_FILES="${MONOLINGUAL_OUT}/\*/text.{}.gz"
 
 # Create deduped files.
+echo ""
+echo "Creating deduped files.."
 cat "${LANGUAGESFILE}" | \
-    parallel --nice 19 -- progress --sshloginfile "${SSHLOGINFILE}" -j "${PARALLELJOBS}" \
-             ${DEDUPED_BIN} "${MONOLINGUAL_OUT}"/*/text.{}.gz "${DEDUPED_OUT}" {}
+    parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_OUT} {}

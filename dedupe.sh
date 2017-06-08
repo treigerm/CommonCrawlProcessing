@@ -10,9 +10,12 @@ INFILES="$1"
 OUTDIR="$2"
 LANGUAGE="$3"
 
+# Directory of already existing deduplicated files.
+DEDUPED_DIR="/fs/vali0/www/data.statmt.org/ngrams/deduped"
+
 # There are two possible candidates for the name of the already existing deduped file.
-DEDUPEDFILE_1="/fs/vali0/www/data.statmt.org/ngrams/deduped/${LANGUAGE}.deduped.xz"
-DEDUPEDFILE_2="/fs/vali0/www/data.statmt.org/ngrams/deduped/${LANGUAGE}.xz"
+DEDUPEDFILE_1="${DEDUPED_DIR}/${LANGUAGE}.deduped.xz"
+DEDUPEDFILE_2="${DEDUPED_DIR}/${LANGUAGE}.xz"
 
 OUTFILE="${OUTDIR}/${LANGUAGE}.deduped.xz"
 DONEFILE="${OUTFILE}.done"

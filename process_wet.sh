@@ -10,7 +10,7 @@ CONFIG_FILE=/home/tim/commoncrawl/.config
 source "${CONFIG_FILE}"
 export DEDUPED_DIR
 
-# TODO: Make parameter.
+# Default values.
 PARALLELJOBS=8
 
 # Locations of executables.
@@ -64,6 +64,9 @@ while [[ $# -gt 0 ]]; do
             LANGUAGESFILE="$2"
             shift # past argument
             ;;
+        -j|--jobs)
+            PARALLELJOBS="$2"
+            shift # past argument
         --sshloginfile)
             SSHLOGINFILE="$2"
             shift # past argument

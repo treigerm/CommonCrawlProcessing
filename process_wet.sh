@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# TODO: Usage description.
-# TODO: Make functions for monolingual and deduplication
-
 # Exit on error
 set -e
 set -o pipefail
@@ -14,6 +11,21 @@ PARALLELJOBS=8
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
 DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
 
+print_help() {
+    local APP="process_wet.sh"
+    cat <<EOF
+Usage :
+$APP [options]
+
+-h, --help                display help
+-min, --monolingual-in    directory with downloaded WET data
+-mout, --monolingual-out  directory to output data split according to language
+-dout, --dedupe-out       directory for output from deduper
+-l,--languagesfile        file which specifies which languages to run the deduper on
+--sshloginfile            ssh file for GNU parallel
+EOF
+}
+
 # Parse arguments. Taken from
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
 # Use -gt 1 to consume two arguments per pass in the loop (e.g. each
@@ -21,11 +33,15 @@ DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
 # Use -gt 0 to consume one or more arguments per pass in the loop (e.g.
 # some arguments don't have a corresponding value to go with it such
 # as in the --default example).
-while [[ $# -gt 1 ]]; do
+while [[ $# -gt 0 ]]; do
     key="$1"
 
     # TODO: Add explanations of parameters.
     case $key in
+        -h|--help)
+            print_help
+            exit 0
+            ;;
         -min|--monolingual-in)
             MONOLINGUAL_IN="$2"
             shift # past argument

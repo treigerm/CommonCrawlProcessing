@@ -1,0 +1,5 @@
+# Ignore notes for myself
+docs
+
+# Ignore config file
+.config

@@ -4,6 +4,12 @@
 set -e
 set -o pipefail
 
+# Load variables from config file and export the ones which are needed in other
+# scripts.
+CONFIG_FILE=/home/tim/commoncrawl/.config
+source "${CONFIG_FILE}"
+export DEDUPED_DIR
+
 # TODO: Make parameter.
 PARALLELJOBS=8
 

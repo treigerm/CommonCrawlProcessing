@@ -26,11 +26,11 @@ fi
 
 # TODO: Detect file type.
 if [[ -f ${DEDUPEDFILE_1} ]]; then
-    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_1}" | xz -c -9 > "${OUTFILE}"
+    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_1}" | xz -c > "${OUTFILE}"
 elif [[ -f ${DEDUPEDFILE_2} ]]; then
-    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_2}" | xz -c -9 > "${OUTFILE}"
+    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_2}" | xz -c > "${OUTFILE}"
 else
-    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe /dev/null | xz -c -9 > "${OUTFILE}"
+    gzip -cd ${INFILES} | ${BINDIR}/commoncrawl_dedupe /dev/null | xz -c > "${OUTFILE}"
 fi
 
 touch "${DONEFILE}"

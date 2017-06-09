@@ -6,7 +6,7 @@ set -o pipefail
 
 # Default values.
 PARALLELJOBS=8
-CONFIG=/home/tim/commoncrawl/.config
+CONFIGFILE=/home/tim/commoncrawl/.config
 
 # Locations of executables.
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
@@ -16,6 +16,11 @@ load_config() {
     # Load variables from config file and export the ones which are needed in other
     # scripts.
     source "${1}"
+    MONOLINGUAL_IN="$monolingual_in"
+    MONOLINGUAL_OUT="$monolingual_out"
+    DEDUPED_OUT="$deduped_out"
+    LANGUAGES="$languagesfile"
+    DEDUPED_DIR="$deduped_dir"
     export DEDUPED_DIR
 }
 
@@ -63,7 +68,7 @@ parse_args() {
                 shift # past argument
                 ;;
             -l|--languagesfile)
-                LANGUAGESFILE="$2"
+                LANGUAGES="$2"
                 shift # past argument
                 ;;
             -j|--jobs)
@@ -73,6 +78,11 @@ parse_args() {
             --sshloginfile)
                 SSHLOGINFILE="$2"
                 shift # past argument
+                ;;
+            -c|--config)
+                CONFIGFILE="$2"
+                shift # past argument
+
                 ;;
             *)
                 # unknown option
@@ -110,11 +120,12 @@ dedupe() {
 
     echo ""
     echo "Creating deduped files.."
-    cat "${LANGUAGESFILE}" | \
+    cat "${LANGUAGES}" | \
         parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_OUT} {}
 }
 
-load_config "${CONFIG}"
+# TODO: Figure out how to not overwrite variables when loading config.
+load_config "${CONFIGFILE}"
 parse_args $@
 extract_monolingual
 dedupe

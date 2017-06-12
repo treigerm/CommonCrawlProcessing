@@ -74,18 +74,19 @@ setup() {
 }
 
 count_downloads() {
-    total=0
-    downloaded=0
+    TOTAL=0
+    DOWNLOADED=0
     for path in $(cat "${OUTDIR}/wet.paths.http"); do
-        total=$((total+1))
+        TOTAL=$((TOTAL+1))
+        # TODO: Explain awk expression.
         FILENAME=$(echo $path | awk ' BEGIN { FS = "/" } { print $(NF-2) "/" $(NF)}')
         if [ -f ${FILENAME}.done ]; then
-            downloaded=$((downloaded+1))
+            DOWNLOADED=$((DOWNLOADED+1))
         fi
     done
-    difference=$((total-downloaded))
-    if [[ ! $difference -eq 0 ]]; then
-        echo "There are ${difference} files missing/incomplete."
+    DIFFERENCE=$((TOTAL-DOWNLOADED))
+    if [[ ! $DIFFERENCE -eq 0 ]]; then
+        echo "There are ${DIFFERENCE} files missing/incomplete."
     done
 }
 

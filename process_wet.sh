@@ -82,7 +82,6 @@ parse_args() {
             -c|--config)
                 CONFIGFILE="$2"
                 shift # past argument
-
                 ;;
             *)
                 # unknown option

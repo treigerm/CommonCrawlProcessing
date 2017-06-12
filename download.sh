@@ -62,7 +62,7 @@ setup() {
     cd "${OUTDIR}"
 
     # Download path file
-    wget "${URL}"
+    wget -nc "${URL}"
 
     # Convert to HTTPS URLs
     gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > wet.paths.http
@@ -85,19 +85,23 @@ count_downloads() {
         fi
     done
     DIFFERENCE=$((TOTAL-DOWNLOADED))
-    if [[ ! $DIFFERENCE -eq 0 ]]; then
+    if [[ "$DIFFERENCE" -ne 0 ]]; then
         echo "There are ${DIFFERENCE} files missing/incomplete."
-    done
+    fi
 }
 
 download() {
     cat "${OUTDIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
 
     echo "Count downloaded files.."
-    while [[ count_downloads ]]; do
+    while [[ $(count_downloads) ]]; do
         echo "Restarting downloads since there are missing files"
         cat "${OUTDIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
         echo "Counting downloaded files.."
     done
     echo "All files downloaded"
 }
+
+parse_args $@
+setup
+download

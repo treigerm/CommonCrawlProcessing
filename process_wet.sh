@@ -166,5 +166,9 @@ dedupe() {
 # TODO: Figure out how to not overwrite variables when loading config.
 load_config "${CONFIGFILE}"
 parse_args $@
-extract_monolingual
-dedupe
+if [[ $EXTRACT_MONOLINGUAL -eq 1 ]]; then
+    extract_monolingual
+fi
+if [[ $DEDUPE -eq 1 ]]; then
+    dedupe
+fi

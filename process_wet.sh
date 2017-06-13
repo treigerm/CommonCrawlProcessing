@@ -6,7 +6,7 @@ set -o pipefail
 
 # Default values.
 PARALLELJOBS=8
-CONFIGFILE=/home/tim/commoncrawl/.config
+CONFIGFILE=$HOME/commoncrawl/.config
 
 # Locations of executables.
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
@@ -16,13 +16,12 @@ load_config() {
     # Load variables from config file and export the ones which are needed in other
     # scripts.
     source "${1}"
-    # TODO: Rename options.
-    MONOLINGUAL_IN="$monolingual_in"
-    MONOLINGUAL_OUT="$monolingual_out"
-    DEDUPED_OUT="$deduped_out"
-    LANGUAGES="$languagesfile"
+    WET_DIR="$wet_dir"
+    MONOLINGUAL_DIR="$monolingual_dir"
     DEDUPED_DIR="$deduped_dir"
-    export DEDUPED_DIR
+    LANGUAGES="$languagesfile"
+    PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"
+    export PREVIOUS_DEDUPED_DIR
 }
 
 print_help() {
@@ -35,7 +34,9 @@ $APP [options]
 -W, --wet-dir          directory with downloaded WET data
 -M, --monolingual-dir  directory to output data split according to language
 -D, --deduped-dir      directory for output from deduper
--l,--languagesfile     file which specifies which languages to run the deduper on
+-l, --languagesfile    file which specifies which languages to run the deduper on
+-c, --config           custom configeration file
+-j, --jobs             number of simultaneous jobs to run for GNU parallel
 --sshloginfile         ssh file for GNU parallel
 EOF
 }
@@ -69,15 +70,15 @@ parse_args() {
                 exit 0
                 ;;
             -W|--wet-dir)
-                MONOLINGUAL_IN="$2"
+                WET_DIR="$2"
                 shift 2
                 ;;
             -M|--monolingual-dir)
-                MONOLINGUAL_OUT="$2"
+                MONOLINGUAL_DIR="$2"
                 shift 2
                 ;;
             -D|--deduped-dir)
-                DEDUPED_OUT="$2"
+                DEDUPED_DIR="$2"
                 shift 2
                 ;;
             -l|--languagesfile)
@@ -108,7 +109,28 @@ parse_args() {
     done
 
     # TODO: Check wether all necessary command options are provided.
-    # TODO: Do list of possible commands.
+
+    EXTRACT_MONOLINGUAL=0
+    DEDUPE=0
+    if [[ $# -eq 0 ]]; then
+        EXTRACT_MONOLINGUAL=1
+        DEDUPE=1
+    else
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                extract_monolingual)
+                    EXTRACT_MONOLINGUAL=1
+                    shift
+                    ;;
+                dedupe)
+                    DEDUPE=1
+                    shift
+                    ;;
+                *)
+                    ;;
+            esac
+        done
+    fi
 
     if [[ ${SSHLOGINFILE} ]]; then
         PARALLEL_OPTIONS="--nice 19 --progress --sshloginfile ${SSHLOGINFILE} -j ${PARALLELJOBS}"
@@ -120,8 +142,8 @@ parse_args() {
 extract_monolingual() {
     echo ""
     echo "Extracting monolingual data.."
-    ls --hide=wet.* "${MONOLINGUAL_IN}" | \
-        parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${MONOLINGUAL_IN}"/{} "${MONOLINGUAL_OUT}"/{}
+    ls --hide=wet.* "${WET_DIR}" | \
+        parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${WET_DIR}"/{} "${MONOLINGUAL_DIR}"/{}
 }
 
 dedupe() {
@@ -133,12 +155,12 @@ dedupe() {
 
     # Description of the location of all files. We need to escape the asterix
     # because otherwise we already do file expansion when calling dedupe.sh.
-    local MONO_FILES="${MONOLINGUAL_OUT}/\*/text.{}.gz"
+    local MONO_FILES="${MONOLINGUAL_DIR}/\*/text.{}.gz"
 
     echo ""
     echo "Creating deduped files.."
     cat "${LANGUAGES}" | \
-        parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_OUT} {}
+        parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
 }
 
 # TODO: Figure out how to not overwrite variables when loading config.

@@ -14,13 +14,14 @@ DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
 
 load_config() {
     # Load variables from config file and export the ones which are needed in other
-    # scripts.
+    # scripts. Only use the value from the config file if the variable hasn't been
+    # set before.
     source "${1}"
-    WET_DIR="$wet_dir"
-    MONOLINGUAL_DIR="$monolingual_dir"
-    DEDUPED_DIR="$deduped_dir"
-    LANGUAGES="$languagesfile"
-    PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"
+    if [[ -z ${WET_DIR+x} ]]; then WET_DIR="$wet_dir"; fi
+    if [[ -z ${MONOLINGUAL_DIR+x} ]]; then MONOLINGUAL_DIR="$monolingual_dir"; fi
+    if [[ -z ${DEDUPED_DIR+x} ]]; then DEDUPED_DIR="$deduped_dir"; fi
+    if [[ -z ${LANGUAGES+x} ]]; then LANGUAGES="$languagesfile"; fi
+    if [[ -z ${PREVIOUS_DEDUPED_DIR+x} ]]; then PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"; fi
     export PREVIOUS_DEDUPED_DIR
 }
 
@@ -43,6 +44,8 @@ EOF
 
 parse_args() {
     if [[ $# -eq 0 ]]; then
+        # TODO: Check if this is appropriate behaviour especially when no commands means we do everything
+        #       and we can set options from config.
         print_help
         exit 1
     fi
@@ -163,9 +166,10 @@ dedupe() {
         parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
 }
 
-# TODO: Figure out how to not overwrite variables when loading config.
-load_config "${CONFIGFILE}"
 parse_args $@
+load_config "${CONFIGFILE}"
+
+# TODO: Check wether necessary options are set.
 if [[ $EXTRACT_MONOLINGUAL -eq 1 ]]; then
     extract_monolingual
 fi

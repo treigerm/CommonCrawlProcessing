@@ -8,8 +8,8 @@ parse_args() {
 
     # Parse arguments. Taken from
     # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
-    local SHORT=hW:M:D:l:j:c:
-    local LONG=help,wet-dir:,monolingual-dir:,deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:
+    local SHORT=hu:W:M:D:l:j:c:
+    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:
 
     # -temporarily store output to be able to check for errors
     # -activate advanced mode getopt quoting e.g. via “--options”
@@ -27,6 +27,10 @@ parse_args() {
             -h|--help)
                 print_help
                 exit 0
+                ;;
+            -u|--crawl-url)
+                CRAWL_URL="$2"
+                shift 2
                 ;;
             -W|--wet-dir)
                 WET_DIR="$2"
@@ -75,6 +79,14 @@ parse_args() {
     else
         while [[ $# -gt 0 ]]; do
             case "$1" in
+                setup)
+                    SETUP=1
+                    shift
+                    ;;
+                download)
+                    DOWNLOAD=1
+                    shift
+                    ;;
                 extract_monolingual)
                     EXTRACT_MONOLINGUAL=1
                     shift

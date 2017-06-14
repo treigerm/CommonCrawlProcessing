@@ -1,8 +1,13 @@
 #!/bin/bash
 
+# TODO: Add download option to script.
+# TODO: Add create_raw option to script.
+
 # Exit on error
 set -e
 set -o pipefail
+
+DEBUG=1
 
 # Default values.
 PARALLELJOBS=8
@@ -10,18 +15,29 @@ CONFIGFILE=$HOME/commoncrawl/.config
 
 # Locations of executables.
 # TODO: Put executables into the script directory.
+# TODO: Find all other dependencies.
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
 DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
+DOWNLOAD_BIN=/home/tim/dev/download/download_wet.sh
 
 main() {
-    source "${SCRIPTDIR}/util.sh"
-    parse_args $@
+    source ${SCRIPTDIR}/util.sh
+    parse_args "$@"
     load_config "${CONFIGFILE}"
+
+    if [[ $SETUP -eq 1 ]]; then
+        setup
+    fi
+
+    if [[ $DOWNLOAD -eq 1 ]]; then
+        download
+    fi
 
     if [[ $EXTRACT_MONOLINGUAL -eq 1 ]]; then
         extract_monolingual
     fi
+
     if [[ $DEDUPE -eq 1 ]]; then
         dedupe
     fi
@@ -32,6 +48,7 @@ load_config() {
     # scripts. Only use the value from the config file if the variable hasn't been
     # set before.
     source "${1}"
+    if [[ -z ${CRAWL_URL+x} ]]; then CRAWL_URL="$crawl_url"; fi
     if [[ -z ${WET_DIR+x} ]]; then WET_DIR="$wet_dir"; fi
     if [[ -z ${MONOLINGUAL_DIR+x} ]]; then MONOLINGUAL_DIR="$monolingual_dir"; fi
     if [[ -z ${DEDUPED_DIR+x} ]]; then DEDUPED_DIR="$deduped_dir"; fi
@@ -44,7 +61,7 @@ print_help() {
     local APP="process_wet.sh"
     cat <<EOF
 Usage:
-$APP [options] (extract_monolingual|dedupe)...
+$APP [options] (setup|download|extract_monolingual|dedupe)...
 
 -h, --help             display help
 -W, --wet-dir          directory with downloaded WET data
@@ -55,6 +72,61 @@ $APP [options] (extract_monolingual|dedupe)...
 -j, --jobs             number of simultaneous jobs to run for GNU parallel
 --sshloginfile         ssh file for GNU parallel
 EOF
+}
+
+setup() {
+    # Make directories for specified crawl.
+    # TODO: Check wether directory names are provided.
+    mkdir -p "${WET_DIR}"
+    mkdir -p "${MONOLINGUAL_DIR}"
+    mkdir -p "${DEDUPED_DIR}"
+    cd "${WET_DIR}"
+
+    # Download path file.
+    wget -nc "${CRAWL_URL}"
+
+    # Convert to HTTPS URLs.
+    if [[ $DEBUG -eq 0 ]]; then
+        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > wet.paths.http
+    else
+        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > paths.tmp
+        head -2 "paths.tmp" > wet.paths.http
+        rm "paths.tmp"
+    fi
+
+    # Make subdirectories.
+    for f in $(cat wet.paths.http | cut -d '/' -f 7 | sort | uniq); do
+        mkdir -p $f
+    done
+}
+
+count_downloads() {
+    TOTAL=0
+    DOWNLOADED=0
+    for path in $(cat "${WET_DIR}/wet.paths.http"); do
+        TOTAL=$((TOTAL+1))
+        # TODO: Explain awk expression.
+        FILENAME=$(echo $path | awk ' BEGIN { FS = "/" } { print $(NF-2) "/" $(NF)}')
+        if [ -f ${FILENAME}.done ]; then
+            DOWNLOADED=$((DOWNLOADED+1))
+        fi
+    done
+    DIFFERENCE=$((TOTAL-DOWNLOADED))
+    if [[ "$DIFFERENCE" -ne 0 ]]; then
+        echo "There are ${DIFFERENCE} files missing/incomplete."
+    fi
+}
+
+download() {
+    cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
+
+    echo "Count downloaded files.."
+    while [[ $(count_downloads) ]]; do
+        echo "Restarting downloads since there are missing files"
+        cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
+        echo "Counting downloaded files.."
+    done
+    echo "All files downloaded"
 }
 
 check_monolingual_opts() {
@@ -99,4 +171,4 @@ dedupe() {
         parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
 }
 
-main $@
+main "$@"

@@ -89,10 +89,16 @@ parse_args() {
         done
     fi
 
-    # TODO: Have base string and then append to it.
-    if [[ ${SSHLOGINFILE} ]]; then
-        PARALLEL_OPTIONS="--nice 19 --progress --sshloginfile ${SSHLOGINFILE} -j ${PARALLELJOBS}"
-    else
-        PARALLEL_OPTIONS="--nice 19 --progress -j ${PARALLELJOBS}"
+    # TODO: Is this the right place for this function?
+    set_parallel_options
+}
+
+set_parallel_options() {
+    PARALLEL_OPTIONS="--nice 19 --progress"
+    if [[ ! -z "${SSHLOGINFILE}" ]]; then
+        PARALLEL_OPTIONS="${PARALLEL_OPTIONS} --sshloginfile ${SSHLOGINFILE}"
+    fi
+    if [[ ! -z "${PARALLELJOBS}" ]]; then
+        PARALLEL_OPTIONS="${PARALLEL_OPTIONS} -j ${PARALLELJOBS}"
     fi
 }

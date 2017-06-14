@@ -111,8 +111,6 @@ parse_args() {
         esac
     done
 
-    # TODO: Check wether all necessary command options are provided.
-
     EXTRACT_MONOLINGUAL=0
     DEDUPE=0
     if [[ $# -eq 0 ]]; then
@@ -142,11 +140,27 @@ parse_args() {
     fi
 }
 
+check_monolingual_opts() {
+    if [[ -z "${WET_DIR}" ]] || [[ -z "${MONOLINGUAL_DIR}" ]]; then
+        echo "To extract monolingual data the --wet-dir and --monolingual-dir options must be set." >&2
+        exit 1
+    fi
+}
+
 extract_monolingual() {
+    check_monolingual_opts
+
     echo ""
     echo "Extracting monolingual data.."
     ls --hide=wet.* "${WET_DIR}" | \
         parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${WET_DIR}"/{} "${MONOLINGUAL_DIR}"/{}
+}
+
+check_dedupe_opts() {
+    if [[ -z "${MONOLINGUAL_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${LANGUAGES}" ]]; then
+        echo "To run the deduper the --monolingual-dir, --deduped-dir and --languagesfile options must be set." >&2
+        exit 1
+    fi
 }
 
 dedupe() {
@@ -155,6 +169,8 @@ dedupe() {
     # NOTE: Pseudo code for sharder:
     # Get all monolingual out and pipe it into sharder
     # use parallel to shard different files on different machines
+
+    check_dedupe_opts
 
     # Description of the location of all files. We need to escape the asterix
     # because otherwise we already do file expansion when calling dedupe.sh.

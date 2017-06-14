@@ -9,11 +9,13 @@ PARALLELJOBS=8
 CONFIGFILE=$HOME/commoncrawl/.config
 
 # Locations of executables.
+# TODO: Put executables into the script directory.
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
 DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
 
 main() {
-    source "${PWD}/util.sh"
+    source "${SCRIPTDIR}/util.sh"
     parse_args $@
     load_config "${CONFIGFILE}"
 

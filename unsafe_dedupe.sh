@@ -2,6 +2,7 @@
 
 # Exit as soon as any command fails.
 set -e
+set -o pipefail
 
 BINDIR=/fs/zisa0/commoncrawl
 
@@ -16,10 +17,12 @@ unsafe_gunzip() {
     # unsafe_gunzip makes it possible to open several .gz files which are corrupted.
     # In our case many .gz files fail with a an "Unexpected end of file" error.
     set +e
+    set +o pipefail
     for file in "$@"; do
         gzip -cd "$file" 2> /dev/null
         echo
     done
+    set -o pipefail
     set -e
 }
 

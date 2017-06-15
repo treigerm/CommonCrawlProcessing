@@ -74,6 +74,10 @@ $APP [options] (setup|download|extract_monolingual|dedupe)...
 EOF
 }
 
+####################################################################################################
+# SETUP                                                                                            #
+####################################################################################################
+
 check_setup_opts() {
     if [[ -z "${WET_DIR}" ]] || [[ -z "${MONOLINGUAL_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${CRAWL_URL}" ]]; then
         echo "For the setup action --wet-dir, --monolingual-dir, --deduped-dir and --crawl-url must be set." >&2
@@ -107,6 +111,10 @@ setup() {
         mkdir -p $f
     done
 }
+
+####################################################################################################
+# DOWNLOAD                                                                                         #
+####################################################################################################
 
 check_download_opts() {
     if [[ -z "${WET_DIR}" ]]; then
@@ -152,6 +160,10 @@ count_downloads() {
     fi
 }
 
+####################################################################################################
+# EXTRACT_MONOLINGUAL                                                                              #
+####################################################################################################
+
 check_monolingual_opts() {
     if [[ -z "${WET_DIR}" ]] || [[ -z "${MONOLINGUAL_DIR}" ]]; then
         echo "To extract monolingual data the --wet-dir and --monolingual-dir options must be set." >&2
@@ -167,6 +179,10 @@ extract_monolingual() {
     ls --hide=wet.* "${WET_DIR}" | \
         parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${WET_DIR}"/{} "${MONOLINGUAL_DIR}"/{}
 }
+
+####################################################################################################
+# DEDUPE                                                                                           #
+####################################################################################################
 
 check_dedupe_opts() {
     if [[ -z "${MONOLINGUAL_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${LANGUAGES}" ]]; then

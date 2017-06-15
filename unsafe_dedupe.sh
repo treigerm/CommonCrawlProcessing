@@ -4,7 +4,7 @@
 set -e
 set -o pipefail
 
-BINDIR=/fs/zisa0/commoncrawl
+LIBDIR=${SCRIPTDIR}/lib
 
 INFILES="$1"
 OUTDIR="$2"
@@ -38,11 +38,11 @@ if [[ -f ${DONEFILE} ]]; then
 fi
 
 if [[ -f ${DEDUPEDFILE_1} ]]; then
-    unsafe_gunzip ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_1}" | xz -c > "${OUTFILE}"
+    unsafe_gunzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe "${DEDUPEDFILE_1}" | xz -c > "${OUTFILE}"
 elif [[ -f ${DEDUPEDFILE_2} ]]; then
-    unsafe_gunzip ${INFILES} | ${BINDIR}/commoncrawl_dedupe "${DEDUPEDFILE_2}" | xz -c > "${OUTFILE}"
+    unsafe_gunzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe "${DEDUPEDFILE_2}" | xz -c > "${OUTFILE}"
 else
-    unsafe_gunzip ${INFILES} | ${BINDIR}/commoncrawl_dedupe /dev/null | xz -c > "${OUTFILE}"
+    unsafe_gunzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe /dev/null | xz -c > "${OUTFILE}"
 fi
 
 touch "${DONEFILE}"

@@ -10,18 +10,13 @@ set -o pipefail
 DEBUG=1
 
 # Default values.
-PARALLELJOBS=8
 CONFIGFILE=$HOME/commoncrawl/.config
 
 # Locations of executables.
-# TODO: Put executables into the script directory.
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 DOWNLOAD_BIN=${SCRIPTDIR}/download_wet.sh
-MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
-
+MONOLINGUAL_BIN=${SCRIPTDIR}/collect_monolingual.sh
 UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe.sh
-# TODO: Add commoncrawl_dedupe
 
 
 main() {

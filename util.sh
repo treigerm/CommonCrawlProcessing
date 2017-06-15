@@ -1,3 +1,36 @@
+load_config() {
+    # Load variables from config file and export the ones which are needed in other
+    # scripts. Only use the value from the config file if the variable hasn't been
+    # set before.
+    source "${1}"
+    if [[ -z ${CRAWL_URL+x} ]]; then CRAWL_URL="$crawl_url"; fi
+    if [[ -z ${WET_DIR+x} ]]; then WET_DIR="$wet_dir"; fi
+    if [[ -z ${MONOLINGUAL_DIR+x} ]]; then MONOLINGUAL_DIR="$monolingual_dir"; fi
+    if [[ -z ${DEDUPED_DIR+x} ]]; then DEDUPED_DIR="$deduped_dir"; fi
+    if [[ -z ${LANGUAGES+x} ]]; then LANGUAGES="$languagesfile"; fi
+    if [[ -z ${PREVIOUS_DEDUPED_DIR+x} ]]; then PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"; fi
+    export PREVIOUS_DEDUPED_DIR
+}
+
+print_help() {
+    local APP="precc"
+    cat <<EOF
+Usage:
+$APP [options] (setup|download|extract_monolingual|dedupe)...
+
+-h, --help             display help
+-u, --crawl-url        url to download the wet.paths.gz file for a given crawl
+-W, --wet-dir          directory with downloaded WET data
+-M, --monolingual-dir  directory to output data split according to language
+-D, --deduped-dir      directory for output from deduper
+-l, --languagesfile    file which specifies which languages to run the deduper on
+-c, --config           custom configeration file
+-j, --jobs             number of simultaneous jobs to run for GNU parallel
+--progress             if selected GNU parallel will display progress
+--sshloginfile         ssh file for GNU parallel
+EOF
+}
+
 parse_args() {
     if [[ $# -eq 0 ]]; then
         # TODO: Check if this is appropriate behaviour especially when no commands means we do everything

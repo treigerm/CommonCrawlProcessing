@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TODO: Add download option to script.
+# TODO: Rename file to precc.sh
 # TODO: Add create_raw option to script.
 
 # Exit on error
@@ -15,11 +15,16 @@ CONFIGFILE=$HOME/commoncrawl/.config
 
 # Locations of executables.
 # TODO: Put executables into the script directory.
-# TODO: Find all other dependencies.
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+DOWNLOAD_BIN=${SCRIPTDIR}/download_wet.sh
+
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
-DEDUPED_BIN=/home/tim/commoncrawl/dedupe.sh
-DOWNLOAD_BIN=/home/tim/dev/download/download_wet.sh
+# TODO: Add collect_langs.py
+
+UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe.sh
+# TODO: Add commoncrawl_dedupe
+
 
 main() {
     source ${SCRIPTDIR}/util.sh
@@ -106,21 +111,23 @@ count_downloads() {
     for path in $(cat "${WET_DIR}/wet.paths.http"); do
         TOTAL=$((TOTAL+1))
         # TODO: Explain awk expression.
-        FILENAME=$(echo $path | awk ' BEGIN { FS = "/" } { print $(NF-2) "/" $(NF)}')
+        FILENAME=$(echo $path | awk 'BEGIN { FS = "/" } { print $(NF-2) "/" $(NF)}')
         if [ -f ${FILENAME}.done ]; then
             DOWNLOADED=$((DOWNLOADED+1))
         fi
     done
     DIFFERENCE=$((TOTAL-DOWNLOADED))
     if [[ "$DIFFERENCE" -ne 0 ]]; then
-        echo "There are ${DIFFERENCE} files missing/incomplete."
+        echo "There are ${DIFFERENCE} files missing/incomplete"
     fi
 }
 
 download() {
+    # TODO: Modify parallel options.
+
     cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
 
-    echo "Count downloaded files.."
+    echo "Counting downloaded files.."
     while [[ $(count_downloads) ]]; do
         echo "Restarting downloads since there are missing files"
         cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
@@ -168,7 +175,7 @@ dedupe() {
     echo ""
     echo "Creating deduped files.."
     cat "${LANGUAGES}" | \
-        parallel ${PARALLEL_OPTIONS} ${DEDUPED_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
+        parallel ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
 }
 
 main "$@"

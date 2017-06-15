@@ -18,9 +18,7 @@ CONFIGFILE=$HOME/commoncrawl/.config
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 DOWNLOAD_BIN=${SCRIPTDIR}/download_wet.sh
-
 MONOLINGUAL_BIN=/fs/freyja0/commoncrawl/collect_monolingual.sh
-# TODO: Add collect_langs.py
 
 UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe.sh
 # TODO: Add commoncrawl_dedupe

@@ -9,7 +9,7 @@ parse_args() {
     # Parse arguments. Taken from
     # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
     local SHORT=hu:W:M:D:l:j:c:
-    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:
+    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
 
     # -temporarily store output to be able to check for errors
     # -activate advanced mode getopt quoting e.g. via “--options”
@@ -60,6 +60,10 @@ parse_args() {
                 SSHLOGINFILE="$2"
                 shift 2
                 ;;
+            --progress)
+                PROGRESS="1"
+                shift
+                ;;
             --)
                 shift
                 break
@@ -71,9 +75,13 @@ parse_args() {
         esac
     done
 
+    SETUP=0
+    DOWNLOAD=0
     EXTRACT_MONOLINGUAL=0
     DEDUPE=0
     if [[ $# -eq 0 ]]; then
+        SETUP=1
+        DOWNLOAD=1
         EXTRACT_MONOLINGUAL=1
         DEDUPE=1
     else
@@ -101,12 +109,14 @@ parse_args() {
         done
     fi
 
-    # TODO: Is this the right place for this function?
     set_parallel_options
 }
 
 set_parallel_options() {
-    PARALLEL_OPTIONS="--nice 19 --progress"
+    PARALLEL_OPTIONS="--nice 19"
+    if [[ "${PROGRESS}" -ne 0 ]]; then
+        PARALLEL_OPTIONS="${PARALLEL_OPTIONS} --progress"
+    fi
     if [[ ! -z "${SSHLOGINFILE}" ]]; then
         PARALLEL_OPTIONS="${PARALLEL_OPTIONS} --sshloginfile ${SSHLOGINFILE}"
     fi

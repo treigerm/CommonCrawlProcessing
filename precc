@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# TODO: Rename file to precc.sh
 # TODO: Add create_raw option to script.
 
 # Exit on error
@@ -10,10 +9,12 @@ set -o pipefail
 DEBUG=1
 
 # Default values.
-CONFIGFILE=$HOME/commoncrawl/.config
+CONFIGFILE=${HOME}/commoncrawl/.config
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export SCRIPTDIR
 
 # Locations of executables.
-SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOWNLOAD_BIN=${SCRIPTDIR}/download_wet.sh
 MONOLINGUAL_BIN=${SCRIPTDIR}/collect_monolingual.sh
 UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe.sh
@@ -56,7 +57,7 @@ load_config() {
 }
 
 print_help() {
-    local APP="process_wet.sh"
+    local APP="precc"
     cat <<EOF
 Usage:
 $APP [options] (setup|download|extract_monolingual|dedupe)...
@@ -116,7 +117,11 @@ count_downloads() {
 }
 
 download() {
-    # TODO: Modify parallel options.
+    cd "${WET_DIR}"
+    PARALLEL_OPTIONS="${PARALLEL_OPTIONS} --wd ${WET_DIR}"
+
+    echo ""
+    echo "Starting download.."
 
     cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
 

@@ -1,4 +1,5 @@
 load_config() {
+    # TODO: Maybe use hypen instead of underscore?
     # Load variables from config file and export the ones which are needed in other
     # scripts. Only use the value from the config file if the variable hasn't been
     # set before.
@@ -7,9 +8,11 @@ load_config() {
     if [[ -z ${WET_DIR+x} ]]; then WET_DIR="$wet_dir"; fi
     if [[ -z ${MONOLINGUAL_DIR+x} ]]; then MONOLINGUAL_DIR="$monolingual_dir"; fi
     if [[ -z ${DEDUPED_DIR+x} ]]; then DEDUPED_DIR="$deduped_dir"; fi
+    if [[ -z ${RAW_DIR+x} ]]; then RAW_DIR="$raw_dir"; fi
     if [[ -z ${LANGUAGES+x} ]]; then LANGUAGES="$languagesfile"; fi
     if [[ -z ${PREVIOUS_DEDUPED_DIR+x} ]]; then PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"; fi
     export PREVIOUS_DEDUPED_DIR
+    export WET_DIR
 }
 
 print_help() {
@@ -23,6 +26,7 @@ $APP [options] (setup|download|extract_monolingual|dedupe)...
 -W, --wet-dir          directory with downloaded WET data
 -M, --monolingual-dir  directory to output data split according to language
 -D, --deduped-dir      directory for output from deduper
+-R, --raw-dir          directory to output raw files
 -l, --languagesfile    file which specifies which languages to run the deduper on
 -c, --config           custom configeration file
 -j, --jobs             number of simultaneous jobs to run for GNU parallel
@@ -41,8 +45,8 @@ parse_args() {
 
     # Parse arguments. Taken from
     # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
-    local SHORT=hu:W:M:D:l:j:c:
-    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
+    local SHORT=hu:W:M:D:R:l:j:c:
+    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,raw-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
 
     # -temporarily store output to be able to check for errors
     # -activate advanced mode getopt quoting e.g. via “--options”
@@ -75,6 +79,10 @@ parse_args() {
                 ;;
             -D|--deduped-dir)
                 DEDUPED_DIR="$2"
+                shift 2
+                ;;
+            -R|--raw-dir)
+                RAW_DIR="$2"
                 shift 2
                 ;;
             -l|--languagesfile)

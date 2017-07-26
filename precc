@@ -1,12 +1,19 @@
 #!/bin/bash
 
-# TODO: Add create_raw option to script.
+# TODO: Make it possible to hand options to parallel as string.
+# TODO: Add automated tests.
 
-# Exit on error
+# Testing:
+# Run batch setup but only use the first n batches.
+# Then run the downloadsplit.
+# Then run the concatenator.
+# TODO: Do the same but with batch size as large as usually (around 352)
+
+# Exit on error.
 set -e
 set -o pipefail
 
-DEBUG=1
+DEBUG=0
 
 # Default values.
 CONFIGFILE=${HOME}/commoncrawl/.config
@@ -15,15 +22,17 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export SCRIPTDIR
 
 # Locations of executables.
-DOWNLOAD_BIN=${SCRIPTDIR}/download_wet.sh
-MONOLINGUAL_BIN=${SCRIPTDIR}/collect_monolingual.sh
-UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe.sh
+DOWNLOADSPLIT_BIN=${SCRIPTDIR}/lib/downloadsplit.sh
+UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe_hash_table.sh
+CONCAT_RAW_BIN=${SCRIPTDIR}/lib/concat_raw.sh
 
 
 main() {
     source ${SCRIPTDIR}/util.sh
     parse_args "$@"
-    load_config "${CONFIGFILE}"
+    if [[ -f "${CONFIGFILE}" ]]; then
+        load_config "${CONFIGFILE}"
+    fi
 
     if [[ $SETUP -eq 1 ]]; then
         setup
@@ -33,12 +42,12 @@ main() {
         download
     fi
 
-    if [[ $EXTRACT_MONOLINGUAL -eq 1 ]]; then
-        extract_monolingual
-    fi
-
     if [[ $DEDUPE -eq 1 ]]; then
         dedupe
+    fi
+
+    if [[ $CREATE_RAW -eq 1 ]]; then
+        create_raw
     fi
 }
 
@@ -48,8 +57,8 @@ main() {
 ####################################################################################################
 
 check_setup_opts() {
-    if [[ -z "${WET_DIR}" ]] || [[ -z "${MONOLINGUAL_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${CRAWL_URL}" ]]; then
-        echo "For the setup action --wet-dir, --monolingual-dir, --deduped-dir and --crawl-url must be set." >&2
+    if [[ -z "${DOWNLOAD_DIR}" ]] || [[ -z "${RAW_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${CRAWL_URL}" ]] || [[ -z "${BATCH_SIZE}" ]]; then
+        echo "For the setup action --download-dir, --raw-dir, --deduped-dir and --crawl-url must be set." >&2
         exit 1
     fi
 }
@@ -58,10 +67,10 @@ setup() {
     check_setup_opts
 
     # Make directories for specified crawl.
-    mkdir -p "${WET_DIR}"
-    mkdir -p "${MONOLINGUAL_DIR}"
+    mkdir -p "${DOWNLOAD_DIR}"
+    mkdir -p "${RAW_DIR}"
     mkdir -p "${DEDUPED_DIR}"
-    cd "${WET_DIR}"
+    cd "${DOWNLOAD_DIR}"
 
     # Download path file.
     wget -nc "${CRAWL_URL}"
@@ -70,14 +79,30 @@ setup() {
     if [[ $DEBUG -eq 0 ]]; then
         gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > wet.paths.http
     else
-        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > paths.tmp
-        head -2 "paths.tmp" > wet.paths.http
-        rm "paths.tmp"
+        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' | head > wet.paths.http
     fi
 
-    # Make subdirectories.
-    for f in $(cat wet.paths.http | cut -d '/' -f 7 | sort | uniq); do
-        mkdir -p $f
+    # "wet.paths.http" contains the urls which point to all the files for this specific crawl. We split
+    # up "wet.paths.http" into smaller batches each batch containing BATCH_SIZE crawls and create
+    # a subdirectory for each batch which will contain the processed data.
+    BATCH_NR=0
+    CURRENT_BATCH_SIZE=0
+    BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
+    CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
+    mkdir -p "${BATCH_ID}"
+    touch "${CURRENT_BATCH_FILE}"
+    for url in $(cat wet.paths.http); do
+        if [[ ${CURRENT_BATCH_SIZE} -ge ${BATCH_SIZE} ]]; then
+            CURRENT_BATCH_SIZE=0
+            BATCH_NR=$((BATCH_NR+1))
+            BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
+            CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
+            mkdir -p "${BATCH_ID}"
+            touch "${CURRENT_BATCH_FILE}"
+        fi
+
+        echo $url >> "${CURRENT_BATCH_FILE}"
+        CURRENT_BATCH_SIZE=$((CURRENT_BATCH_SIZE+1))
     done
 }
 
@@ -86,8 +111,8 @@ setup() {
 ####################################################################################################
 
 check_download_opts() {
-    if [[ -z "${WET_DIR}" ]]; then
-        echo "For the download action --wet-dir must be set." >&2
+    if [[ -z "${DOWNLOAD_DIR}" ]]; then
+        echo "For the download action --download-dir must be set." >&2
         exit 1
     fi
 }
@@ -95,58 +120,11 @@ check_download_opts() {
 download() {
     check_download_opts
 
-    cd "${WET_DIR}"
-    PARALLEL_OPTIONS="${PARALLEL_OPTIONS} --wd ${WET_DIR}"
-
     echo ""
     echo "Starting download.."
 
-    cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
-
-    echo "Counting downloaded files.."
-    while [[ $(count_downloads) ]]; do
-        echo "Restarting downloads since there are missing files"
-        cat "${WET_DIR}/wet.paths.http" | parallel ${PARALLEL_OPTIONS} ${DOWNLOAD_BIN}
-        echo "Counting downloaded files.."
-    done
-    echo "All files downloaded"
-}
-
-count_downloads() {
-    TOTAL=0
-    DOWNLOADED=0
-    for path in $(cat "${WET_DIR}/wet.paths.http"); do
-        TOTAL=$((TOTAL+1))
-        # TODO: Explain awk expression.
-        FILENAME=$(echo $path | awk 'BEGIN { FS = "/" } { print $(NF-2) "/" $(NF)}')
-        if [ -f ${FILENAME}.done ]; then
-            DOWNLOADED=$((DOWNLOADED+1))
-        fi
-    done
-    DIFFERENCE=$((TOTAL-DOWNLOADED))
-    if [[ "$DIFFERENCE" -ne 0 ]]; then
-        echo "There are ${DIFFERENCE} files missing/incomplete"
-    fi
-}
-
-####################################################################################################
-# EXTRACT_MONOLINGUAL                                                                              #
-####################################################################################################
-
-check_monolingual_opts() {
-    if [[ -z "${WET_DIR}" ]] || [[ -z "${MONOLINGUAL_DIR}" ]]; then
-        echo "To extract monolingual data the --wet-dir and --monolingual-dir options must be set." >&2
-        exit 1
-    fi
-}
-
-extract_monolingual() {
-    check_monolingual_opts
-
-    echo ""
-    echo "Extracting monolingual data.."
-    ls --hide=wet.* "${WET_DIR}" | \
-        parallel ${PARALLEL_OPTIONS} ${MONOLINGUAL_BIN} "${WET_DIR}"/{} "${MONOLINGUAL_DIR}"/{}
+    find "${DOWNLOAD_DIR}" -maxdepth 1 -name "batch.*" -type d | \
+        parallel --env SCRIPTDIR ${PARALLEL_OPTIONS} ${DOWNLOADSPLIT_BIN}
 }
 
 ####################################################################################################
@@ -154,29 +132,58 @@ extract_monolingual() {
 ####################################################################################################
 
 check_dedupe_opts() {
-    if [[ -z "${MONOLINGUAL_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${LANGUAGES}" ]]; then
-        echo "To run the deduper the --monolingual-dir, --deduped-dir and --languagesfile options must be set." >&2
+    if [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${LANGUAGES}" ]] || [[ -z "${CRAWL_ID}" ]]; then
+        echo "To run the deduper the --deduped-dir, --languagesfile and --crawl-id options must be set." >&2
         exit 1
     fi
 }
 
 dedupe() {
     # TODO: Implement sharding capability.
-    # NOTE: Maybe implement that in deduper.
+    # NOTE: Create different function for that.
     # NOTE: Pseudo code for sharder:
     # Get all monolingual out and pipe it into sharder
     # use parallel to shard different files on different machines
 
+    if [[ -z "${HASH_TABLE_DIR}" ]]; then
+        local SRC_HASH_TABLE="/dev/null"
+    else
+        local SRC_HASH_TABLE="${HASH_TABLE_DIR}/{}_deduper_hash_table"
+    fi
     check_dedupe_opts
 
-    # Description of the location of all files. We need to escape the asterix
-    # because otherwise we already do file expansion when calling dedupe.sh.
-    local MONO_FILES="${MONOLINGUAL_DIR}/\*/text.{}.gz"
+    local RAW_FILE="${RAW_DIR}/{}.${CRAWL_ID}.raw.xz"
+    local OUT_HASH_TABLE_PATH="${DEDUPED_DIR}/hash_table"
+    local OUT_HASH_TABLE="${OUT_HASH_TABLE_PATH}/{}_deduper_hash_table"
+    mkdir -p "${OUT_HASH_TABLE_PATH}"
 
     echo ""
     echo "Creating deduped files.."
     cat "${LANGUAGES}" | \
-        parallel ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} ${MONO_FILES} ${DEDUPED_DIR} {}
+        parallel --env SCRIPTDIR --env PREVIOUS_DEDUPED_DIR ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} \
+                 ${RAW_FILE} ${DEDUPED_DIR} {} ${SRC_HASH_TABLE} ${OUT_HASH_TABLE}
+}
+
+####################################################################################################
+# CREATE_RAW                                                                                       #
+####################################################################################################
+
+check_raw_opts() {
+    if [[ -z "${DOWNLOAD_DIR}" ]] || [[ -z "${RAW_DIR}" ]] || [[ -z "${LANGUAGES}" ]] || [[ -z "${CRAWL_ID}" ]]; then
+        echo "To create the raw files the --download-dir, --raw-dir, --crawl-id and --languagesfile options must be set." >&2
+        exit 1
+    fi
+}
+
+create_raw() {
+    # TODO: How to handle english data?
+    check_raw_opts
+
+    echo ""
+    echo "Creating raw files.."
+
+    cat "${LANGUAGES}" | \
+        parallel ${PARALLEL_OPTIONS} ${CONCAT_RAW_BIN} ${DOWNLOAD_DIR} ${RAW_DIR} {} ${CRAWL_ID}
 }
 
 ####################################################################################################

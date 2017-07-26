@@ -4,29 +4,36 @@ load_config() {
     # scripts. Only use the value from the config file if the variable hasn't been
     # set before.
     source "${1}"
+
     if [[ -z ${CRAWL_URL+x} ]]; then CRAWL_URL="$crawl_url"; fi
-    if [[ -z ${WET_DIR+x} ]]; then WET_DIR="$wet_dir"; fi
+    if [[ -z ${BATCH_SIZE+x} ]]; then BATCH_SIZE="$batch_size"; fi
+    if [[ -z ${DOWNLOAD_DIR+x} ]]; then DOWNLOAD_DIR="$download_dir"; fi
     if [[ -z ${MONOLINGUAL_DIR+x} ]]; then MONOLINGUAL_DIR="$monolingual_dir"; fi
     if [[ -z ${DEDUPED_DIR+x} ]]; then DEDUPED_DIR="$deduped_dir"; fi
     if [[ -z ${RAW_DIR+x} ]]; then RAW_DIR="$raw_dir"; fi
+    if [[ -z ${CRAWL_ID+x} ]]; then CRAWL_ID="$crawl_id"; fi
+    if [[ -z ${HASH_TABLE_DIR+x} ]]; then HASH_TABLE_DIR="$hash_table_dir"; fi
     if [[ -z ${LANGUAGES+x} ]]; then LANGUAGES="$languagesfile"; fi
     if [[ -z ${PREVIOUS_DEDUPED_DIR+x} ]]; then PREVIOUS_DEDUPED_DIR="$previous_deduped_dir"; fi
     export PREVIOUS_DEDUPED_DIR
-    export WET_DIR
+    export DOWNLOAD_DIR
 }
 
 print_help() {
     local APP="precc"
     cat <<EOF
 Usage:
-$APP [options] (setup|download|extract_monolingual|dedupe)...
+$APP [options] (setup|download|dedupe|create_raw)...
 
 -h, --help             display help
 -u, --crawl-url        url to download the wet.paths.gz file for a given crawl
--W, --wet-dir          directory with downloaded WET data
+-b, --batch-size       number of files in one crawl
+-d, --download-dir     directory with downloaded data
 -M, --monolingual-dir  directory to output data split according to language
 -D, --deduped-dir      directory for output from deduper
 -R, --raw-dir          directory to output raw files
+-i, --crawl-id         CommonCrawl ID of the crawl as given in the form YEAR_WEEK
+-H, --hash-table-dir   hash table for the deduper to read from disk
 -l, --languagesfile    file which specifies which languages to run the deduper on
 -c, --config           custom configeration file
 -j, --jobs             number of simultaneous jobs to run for GNU parallel
@@ -45,8 +52,8 @@ parse_args() {
 
     # Parse arguments. Taken from
     # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
-    local SHORT=hu:W:M:D:R:l:j:c:
-    local LONG=help,crawl-url:,wet-dir:,monolingual-dir:,deduped-dir:,raw-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
+    local SHORT=hu:b:d:M:D:R:l:j:c:H:i:
+    local LONG=help,crawl-url:,batch_size:,download-dir:,monolingual-dir:,deduped-dir:,raw-dir:,crawl-id:,hash-table-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
 
     # -temporarily store output to be able to check for errors
     # -activate advanced mode getopt quoting e.g. via “--options”
@@ -69,8 +76,12 @@ parse_args() {
                 CRAWL_URL="$2"
                 shift 2
                 ;;
-            -W|--wet-dir)
-                WET_DIR="$2"
+            -b|--batch-size)
+                BATCH_SIZE="$2"
+                shift 2
+                ;;
+            -d|--download-dir)
+                DOWNLOAD_DIR="$2"
                 shift 2
                 ;;
             -M|--monolingual-dir)
@@ -83,6 +94,14 @@ parse_args() {
                 ;;
             -R|--raw-dir)
                 RAW_DIR="$2"
+                shift 2
+                ;;
+            -i|--crawl-id)
+                CRAWL_ID="$2"
+                shift 2
+                ;;
+            -H|--hash-table)
+                HASH_TABLE_DIR="$2"
                 shift 2
                 ;;
             -l|--languagesfile)
@@ -118,13 +137,14 @@ parse_args() {
 
     SETUP=0
     DOWNLOAD=0
-    EXTRACT_MONOLINGUAL=0
     DEDUPE=0
+    CREATE_RAW=0
     if [[ $# -eq 0 ]]; then
+        # TODO: Check wether this creates any problems.
         SETUP=1
         DOWNLOAD=1
-        EXTRACT_MONOLINGUAL=1
         DEDUPE=1
+        CREATE_RAW=1
     else
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -136,12 +156,12 @@ parse_args() {
                     DOWNLOAD=1
                     shift
                     ;;
-                extract_monolingual)
-                    EXTRACT_MONOLINGUAL=1
-                    shift
-                    ;;
                 dedupe)
                     DEDUPE=1
+                    shift
+                    ;;
+                create_raw)
+                    CREATE_RAW=1
                     shift
                     ;;
                 *)

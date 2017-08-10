@@ -50,10 +50,10 @@ if [[ -f ${DONEFILE} ]]; then
 fi
 
 if [[ -f ${DEDUPEDFILE} ]]; then
-    unsafe_unzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe_from_file "${DEDUPEDFILE}" "${SRC_HASH_TABLE}" "${OUT_HASH_TABLE}" | \
+    unsafe_unzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe_save_table "${DEDUPEDFILE}" "${SRC_HASH_TABLE}" "${OUT_HASH_TABLE}" | \
         /fs/zisa0/tim/bin/xz -T 6 -c > "${OUTFILE}"
 else
-    unsafe_unzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe_from_file /dev/null "${SRC_HASH_TABLE}" "${OUT_HASH_TABLE}" | \
+    unsafe_unzip ${INFILES} | ${LIBDIR}/commoncrawl_dedupe_save_table /dev/null "${SRC_HASH_TABLE}" "${OUT_HASH_TABLE}" | \
         /fs/zisa0/tim/bin/xz -T 6 -c > "${OUTFILE}"
 fi
 

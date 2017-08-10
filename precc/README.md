@@ -11,27 +11,25 @@ is a wrapper around several scripts. Each of these scripts can be also be used o
 
 ## General process
 
-<!---
-Goal: Create two types of files 1. raw and 2. deduped. We are given data in WET format.
+CommonCrawl provides each crawl in the WET format, which for each crawled web page contains text that was extracted from the HTML. Each crawl
+consists of several thousand WET files. Each WET file in turn contains the data for several web pages, many of which might be in different
+languages. `precc` can convert these WET files into two different types of files:
+- `.raw.xz`: These files contain the same data as the WET files but they are splitted according to language i.e. per crawl there is one `.raw.xz` file for each language. For English there are 100 `.raw.xz` files since the English data is a lot larger then the remaining languages. Documents are delimited by a header which begins with the hash df6fa1abb58549287111ba8d776733e9.
+- `.deduped.xz`: These are the result of processing the `.raw.xz` and removing any duplicate lines. There is one `.deduped.xz` file for each language and it grows with each crawl. English, again, is an exception and is sharded into 100 `.deduped.xz` files.
 
-Four steps:
-1. Create batches
-2. Download data
-3. Create raw files
-4. Create deduped files
-
-Filetypes:
-- Raw files
-- Deduped files
---->
+So all in all there are four steps in our pipeline:
+1. Splitting the WET files into batches for processing
+2. Downloading all of the data in parallel
+3. Creating the raw files
+4. Creating deduped files
 
 ## Dependencies
 
-Some of the scripts depend on binaries that don't come with this repository. You will need the `commoncrawl_dedupe_save_table` binary from
-[kpu/preprocess](https://github.com/kpu/preprocess) and the `langsplit` executable from [here](https://github.com/christianbuck/mtma_bitext/tree/master/html_convert).
+Some of the scripts depend on binaries that don't come with this repository. You will need the `commoncrawl_dedupe_save_table` binary from Kenneth 
+Heafield's [preprocessing tools](https://github.com/treigerm/preprocess) (this is a fork) and the `langsplit` executable from [here](https://github.com/christianbuck/mtma_bitext/tree/master/html_convert).
 After you compiled both binaries place a copy of them in the `lib` folder of this project.
 
-## 1. Setup folder structure
+## 1. Setup folder structure and create batches
 
 ```
 ./precc --download-dir /path/to/downloads --raw-dir /path/to/raw --deduped-dir /path/to/deduped --crawl-url http://crawl.com --batch-size 25 setup

@@ -1,0 +1,3 @@
+- Create deduped files for all minor languages that are not present yet
+- Update english deduped files
+- Copy the English language trie on AWS S3

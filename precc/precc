@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# TODO: Make it possible to hand options to parallel as string.
+# TODO: Add automated tests.
+
+# Testing:
+# Run batch setup but only use the first n batches.
+# Then run the downloadsplit.
+# Then run the concatenator.
+# TODO: Do the same but with batch size as large as usually (around 352)
+
+# Exit on error.
+set -e
+set -o pipefail
+
+DEBUG=0
+
+# Default values.
+CONFIGFILE=${HOME}/commoncrawl/.config
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export SCRIPTDIR
+
+# Locations of executables.
+DOWNLOADSPLIT_BIN=${SCRIPTDIR}/lib/downloadsplit.sh
+UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe_hash_table.sh
+CONCAT_RAW_BIN=${SCRIPTDIR}/lib/concat_raw.sh
+
+
+main() {
+    source ${SCRIPTDIR}/util.sh
+    parse_args "$@"
+    if [[ -f "${CONFIGFILE}" ]]; then
+        load_config "${CONFIGFILE}"
+    fi
+
+    if [[ $SETUP -eq 1 ]]; then
+        setup
+    fi
+
+    if [[ $DOWNLOAD -eq 1 ]]; then
+        download
+    fi
+
+    if [[ $DEDUPE -eq 1 ]]; then
+        dedupe
+    fi
+
+    if [[ $CREATE_RAW -eq 1 ]]; then
+        create_raw
+    fi
+}
+
+
+####################################################################################################
+# SETUP                                                                                            #
+####################################################################################################
+
+check_setup_opts() {
+    if [[ -z "${DOWNLOAD_DIR}" ]] || [[ -z "${RAW_DIR}" ]] || [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${CRAWL_URL}" ]] || [[ -z "${BATCH_SIZE}" ]]; then
+        echo "For the setup action --download-dir, --raw-dir, --deduped-dir and --crawl-url must be set." >&2
+        exit 1
+    fi
+}
+
+setup() {
+    check_setup_opts
+
+    # Make directories for specified crawl.
+    mkdir -p "${DOWNLOAD_DIR}"
+    mkdir -p "${RAW_DIR}"
+    mkdir -p "${DEDUPED_DIR}"
+    cd "${DOWNLOAD_DIR}"
+
+    # Download path file.
+    wget -nc "${CRAWL_URL}"
+
+    # Convert to HTTPS URLs.
+    if [[ $DEBUG -eq 0 ]]; then
+        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > wet.paths.http
+    else
+        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' | head > wet.paths.http
+    fi
+
+    # "wet.paths.http" contains the urls which point to all the files for this specific crawl. We split
+    # up "wet.paths.http" into smaller batches each batch containing BATCH_SIZE crawls and create
+    # a subdirectory for each batch which will contain the processed data.
+    BATCH_NR=0
+    CURRENT_BATCH_SIZE=0
+    BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
+    CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
+    mkdir -p "${BATCH_ID}"
+    touch "${CURRENT_BATCH_FILE}"
+    for url in $(cat wet.paths.http); do
+        if [[ ${CURRENT_BATCH_SIZE} -ge ${BATCH_SIZE} ]]; then
+            CURRENT_BATCH_SIZE=0
+            BATCH_NR=$((BATCH_NR+1))
+            BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
+            CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
+            mkdir -p "${BATCH_ID}"
+            touch "${CURRENT_BATCH_FILE}"
+        fi
+
+        echo $url >> "${CURRENT_BATCH_FILE}"
+        CURRENT_BATCH_SIZE=$((CURRENT_BATCH_SIZE+1))
+    done
+}
+
+####################################################################################################
+# DOWNLOAD                                                                                         #
+####################################################################################################
+
+check_download_opts() {
+    if [[ -z "${DOWNLOAD_DIR}" ]]; then
+        echo "For the download action --download-dir must be set." >&2
+        exit 1
+    fi
+}
+
+download() {
+    check_download_opts
+
+    echo ""
+    echo "Starting download.."
+
+    find "${DOWNLOAD_DIR}" -maxdepth 1 -name "batch.*" -type d | \
+        parallel --env SCRIPTDIR ${PARALLEL_OPTIONS} ${DOWNLOADSPLIT_BIN}
+}
+
+####################################################################################################
+# DEDUPE                                                                                           #
+####################################################################################################
+
+check_dedupe_opts() {
+    if [[ -z "${DEDUPED_DIR}" ]] || [[ -z "${LANGUAGES}" ]] || [[ -z "${CRAWL_ID}" ]]; then
+        echo "To run the deduper the --deduped-dir, --languagesfile and --crawl-id options must be set." >&2
+        exit 1
+    fi
+}
+
+dedupe() {
+    # TODO: Implement sharding capability.
+    # NOTE: Create different function for that.
+    # NOTE: Pseudo code for sharder:
+    # Get all monolingual out and pipe it into sharder
+    # use parallel to shard different files on different machines
+
+    if [[ -z "${HASH_TABLE_DIR}" ]]; then
+        local SRC_HASH_TABLE="/dev/null"
+    else
+        local SRC_HASH_TABLE="${HASH_TABLE_DIR}/{}_deduper_hash_table"
+    fi
+    check_dedupe_opts
+
+    local RAW_FILE="${RAW_DIR}/{}.${CRAWL_ID}.raw.xz"
+    local OUT_HASH_TABLE_PATH="${DEDUPED_DIR}/hash_table"
+    local OUT_HASH_TABLE="${OUT_HASH_TABLE_PATH}/{}_deduper_hash_table"
+    mkdir -p "${OUT_HASH_TABLE_PATH}"
+
+    echo ""
+    echo "Creating deduped files.."
+    cat "${LANGUAGES}" | \
+        parallel --env SCRIPTDIR --env PREVIOUS_DEDUPED_DIR ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} \
+                 ${RAW_FILE} ${DEDUPED_DIR} {} ${SRC_HASH_TABLE} ${OUT_HASH_TABLE}
+}
+
+####################################################################################################
+# CREATE_RAW                                                                                       #
+####################################################################################################
+
+check_raw_opts() {
+    if [[ -z "${DOWNLOAD_DIR}" ]] || [[ -z "${RAW_DIR}" ]] || [[ -z "${LANGUAGES}" ]] || [[ -z "${CRAWL_ID}" ]]; then
+        echo "To create the raw files the --download-dir, --raw-dir, --crawl-id and --languagesfile options must be set." >&2
+        exit 1
+    fi
+}
+
+create_raw() {
+    # TODO: How to handle english data?
+    check_raw_opts
+
+    echo ""
+    echo "Creating raw files.."
+
+    cat "${LANGUAGES}" | \
+        parallel ${PARALLEL_OPTIONS} ${CONCAT_RAW_BIN} ${DOWNLOAD_DIR} ${RAW_DIR} {} ${CRAWL_ID}
+}
+
+####################################################################################################
+# MAIN EXECUTION                                                                                   #
+####################################################################################################
+
+main "$@"

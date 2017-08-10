@@ -1,9 +1,12 @@
 # Deduping .raw files
 
+<!-- TODO: Mention installation. -->
+
 ## Dedupe
 
 Deduping is done by using the `commoncrawl_dedupe` executable from [github.com/kpu/preprocess](github.com/kpu/preprocess). The script
-`dedupe.sh` is simply a wrapper for it.
+`dedupe.sh` is simply a wrapper for it. The deduper uses an hash table to detect the duplicates. By saving it to disk we can avoid reading 
+and decompressing the previous deduped files. The `commoncrawl_dedupe_save_table` executable makes this possible.
 
 ## Shard and dedupe
 
@@ -23,6 +26,21 @@ cat language.codes | parallel ./dedupe.sh /path/to/raw/{}.2017_17.raw.xz /path/t
 ```
 Here `language.codes` is a a list of the language codes that we want to deduped separated by newline. Note that the command also works if some languages
 don't already have a file at `/path/to/${language_code}.deduped.xz`.
+
+### Deduping without sharding and with saving the hash table to disk
+
+Assuming we have the same setup as in the previous section and you want to store the hash table at `/path/to/out_table`. Then you can run:
+```bash
+cat language.codes | \
+parallel ./dedupe_hash_table.sh /path/to/raw/{}.raw.2017_17.xz /path/to/deduped {} /dev/null /path/to/table1 /path/to/{}.deduped.xz
+```
+
+Then you can reuse the hash table to dedupe the next crawl as follows:
+```bash
+cat language.codes | \
+parallel ./dedupe_hash_table.sh /path/to/raw/{}.raw.2017_30.xz /path/to/deduped {} /path/to/table1 /path/to/table2
+```
+
 
 ### Deduping with sharding
 

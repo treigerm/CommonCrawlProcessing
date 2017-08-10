@@ -1,13 +1,17 @@
 #!/bin/bash
 
+# Parallel command:
+# find /path/to/crawl -name "text.en.gz" | parallel ./create_raw_en.sh {} ${out_dir} {#}
+
 set -e
 set -o pipefail
 
-SOURCEFILE=$1
-DESTINATION=$2
-INDEX=$3
+SOURCEFILE="$1"
+OUTDIR="$2"
+INDEX="$3"
+
 PADDEDINDEX=$(printf %02d $((INDEX - 1)))
-NEWFILE=${DESTINATION}/en.${PADDEDINDEX}.raw.xz
+NEWFILE=${OUTDIR}/en.${PADDEDINDEX}.raw.xz
 DONEFILE=${NEWFILE}.done
 if [[ -f ${DONEFILE} ]]; then
     exit 0

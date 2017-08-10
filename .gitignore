@@ -2,4 +2,7 @@ jhu/
 docs/
 s3/one_off_scripts
 
-.config
+# Ignore binaries
+precc/lib/commoncrawl_dedupe
+precc/lib/commoncrawl_dedupe_save_table
+precc/lib/langsplit

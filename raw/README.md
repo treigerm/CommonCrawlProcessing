@@ -27,7 +27,7 @@ Collecting all the data from the previous file into one big `.raw.xz` file for e
 ```bash
 cat language.codes | parallel ./create_raw.sh /path/to/crawl /path/to/raw {}
 ```
-Here `language.codes` contains a list of all the language codes you want to create the raw file for, separated by a newline.
+Here `language.codes` is as in [here](https://github.com/treigerm/CommonCrawlProcessing/blob/master/language_lists/languages.non_en).
 
 To collect the English data:
 ```

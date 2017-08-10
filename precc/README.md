@@ -1,13 +1,12 @@
 <!---
 TODO: Explain dependencies.
-TODO: Explain languages file.
 TODO: Explain general process.
 --->
 
 # Precc
 
 A tool to extract monolingual data from the CommonCrawl corpus. `precc` stands for preprocessing CommonCrawl. The main `precc` script
-is a wrapper around several scripts. Each of these scripts can be also be used on its own.
+is a wrapper around several scripts which can be also be used on their own.
 
 ## General process
 
@@ -58,6 +57,9 @@ parallel --env ${SCRIPTDIR} --sshloginfile nodelist /path/to/precc/downloadsplit
 ```
 
 ## 3. Create raw data
+
+<b>NOTE:</b> The file `languages` is as in [here](https://github.com/treigerm/CommonCrawlProcessing/blob/master/language_lists/languages.non_en) 
+and indicates for which languages we want to create the raw files.
 
 ```
 ./precc --download-dir /path/to/downloads --raw-dir /path/to/raw --languagesfile languages --crawl-id ${crawl_id} create_raw

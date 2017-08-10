@@ -29,8 +29,8 @@ all languages in parallel can be done with:
 ```bash
 cat language.codes | parallel ./dedupe.sh /path/to/raw/{}.2017_17.raw.xz /path/to/deduped {} /path/to/{}.deduped.xz
 ```
-Here `language.codes` is a a list of the language codes that we want to deduped separated by newline. Note that the command also works if some languages
-don't already have a file at `/path/to/${language_code}.deduped.xz`.
+Here `language.codes` is as in [here](https://github.com/treigerm/CommonCrawlProcessing/blob/master/language_lists/languages.non_en). 
+The command also works if some languages don't already have a file at `/path/to/${language_code}.deduped.xz`.
 
 ### Deduping without sharding and with saving the hash table to disk (`commoncrawl_deduped_save_table`)
 

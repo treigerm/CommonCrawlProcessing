@@ -21,6 +21,7 @@ Assuming that all the shards of the crawl are at `/path/to/crawl`:
 cd /path/to/crawl
 ls | grep -E '^[0-9]+\.[0-9]{,2}$' | parallel ./collect_monolingual.sh {} {}
 ```
+The regex ensures that we only go through the directories which are a CommonCrawl timestamp.
 
 Collecting all the data from the previous file into one big `.raw.xz` file for each language:
 ```bash
@@ -29,6 +30,6 @@ cat language.codes | parallel ./create_raw.sh /path/to/crawl /path/to/raw {}
 Here `language.codes` contains a list of all the language codes you want to create the raw file for, separated by a newline.
 
 To collect the English data:
-```bash
+```
 find /path/to/crawl -name "text.en.gz" | parallel ./create_raw_en.sh {} /path/to/raw_en {#}
 ```

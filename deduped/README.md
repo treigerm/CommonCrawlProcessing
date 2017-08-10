@@ -2,6 +2,8 @@
 
 ## Dedupe
 
+Deduping is done by using the `commoncrawl_dedupe` executable from [github.com/kpu/preprocess](github.com/kpu/preprocess). The script
+`dedupe.sh` is simply a wrapper for it.
 
 ## Shard and dedupe
 
@@ -14,7 +16,7 @@ strip leading and trailing white space and remove lines with invalid UTF-8.
 ### Deduping without sharding
 
 Let's assume that all the raw files you want to dedupe are in `/path/to/raw` and are named `${language_code}.raw.2017_17.xz`. You want to store the new
-deduped files at `/path/to/deduped` and each language already has a deduped file at with the name `/path/to/${language_code}.deduped.xz`. Then deduping
+deduped files at `/path/to/deduped` and each language already has a deduped file with the name `/path/to/${language_code}.deduped.xz`. Then deduping
 all languages in parallel can be done with:
 ```bash
 cat language.codes | parallel ./dedupe.sh /path/to/raw/{}.2017_17.raw.xz /path/to/deduped {} /path/to/{}.deduped.xz
@@ -24,8 +26,8 @@ don't already have a file at `/path/to/${language_code}.deduped.xz`.
 
 ### Deduping with sharding
 
-<b>NOTE:</b> By default the sharding assumes that we are working on English data and shard into 100 files. However it should be trivial to add the language 
-code as an argument.
+<b>NOTE:</b> By default the sharding assumes that we are working on English data and shard into 100 files. However it should be trivial to change the script and 
+add the language code as an argument.
 
 Sharding the files:
 ```bash

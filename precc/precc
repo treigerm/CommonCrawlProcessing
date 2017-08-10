@@ -22,9 +22,10 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export SCRIPTDIR
 
 # Locations of executables.
-DOWNLOADSPLIT_BIN=${SCRIPTDIR}/lib/downloadsplit.sh
+SETUP_BIN=${SCRIPTDIR}/setup.sh
+DOWNLOADSPLIT_BIN=${SCRIPTDIR}/downloadsplit.sh
 UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe_hash_table.sh
-CONCAT_RAW_BIN=${SCRIPTDIR}/lib/concat_raw.sh
+CONCAT_RAW_BIN=${SCRIPTDIR}/concat_raw.sh
 
 
 main() {
@@ -70,40 +71,8 @@ setup() {
     mkdir -p "${DOWNLOAD_DIR}"
     mkdir -p "${RAW_DIR}"
     mkdir -p "${DEDUPED_DIR}"
-    cd "${DOWNLOAD_DIR}"
 
-    # Download path file.
-    wget -nc "${CRAWL_URL}"
-
-    # Convert to HTTPS URLs.
-    if [[ $DEBUG -eq 0 ]]; then
-        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' > wet.paths.http
-    else
-        gzip -cd wet.paths.gz | sed 's/^/https:\/\/commoncrawl.s3.amazonaws.com\//' | head > wet.paths.http
-    fi
-
-    # "wet.paths.http" contains the urls which point to all the files for this specific crawl. We split
-    # up "wet.paths.http" into smaller batches each batch containing BATCH_SIZE crawls and create
-    # a subdirectory for each batch which will contain the processed data.
-    BATCH_NR=0
-    CURRENT_BATCH_SIZE=0
-    BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
-    CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
-    mkdir -p "${BATCH_ID}"
-    touch "${CURRENT_BATCH_FILE}"
-    for url in $(cat wet.paths.http); do
-        if [[ ${CURRENT_BATCH_SIZE} -ge ${BATCH_SIZE} ]]; then
-            CURRENT_BATCH_SIZE=0
-            BATCH_NR=$((BATCH_NR+1))
-            BATCH_ID=$(printf "batch.%05d" ${BATCH_NR})
-            CURRENT_BATCH_FILE="${DOWNLOAD_DIR}/${BATCH_ID}/wet.paths.${BATCH_ID}"
-            mkdir -p "${BATCH_ID}"
-            touch "${CURRENT_BATCH_FILE}"
-        fi
-
-        echo $url >> "${CURRENT_BATCH_FILE}"
-        CURRENT_BATCH_SIZE=$((CURRENT_BATCH_SIZE+1))
-    done
+    ${SETUP_BIN} "${DOWNLOAD_DIR}" "${CRAWL_URL}" "${BATCH_SIZE}"
 }
 
 ####################################################################################################

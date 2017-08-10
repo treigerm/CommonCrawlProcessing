@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-WET_DIR="$1"
+DOWNLOAD_DIR="$1"
 RAW_DIR="$2"
 LANG="$3"
 CRAWL_ID="$4"
@@ -18,7 +18,7 @@ if [[ ! -f ${RAW_FILE} ]]; then
     touch ${RAW_FILE}
 fi
 
-for BATCH in $(find "${WET_DIR}" -maxdepth 1 -name "batch.*" -type d | sort); do
+for BATCH in $(find "${DOWNLOAD_DIR}" -maxdepth 1 -name "batch.*" -type d | sort); do
     if [[ ! -f "${BATCH}/download.done" ]]; then
         # Exit if the download for this batch hasn't finished.
         exit 1

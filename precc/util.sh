@@ -25,20 +25,21 @@ print_help() {
 Usage:
 $APP [options] (setup|download|dedupe|create_raw)...
 
--h, --help             display help
--u, --crawl-url        url to download the wet.paths.gz file for a given crawl
--b, --batch-size       number of files in one crawl
--d, --download-dir     directory with downloaded data
--M, --monolingual-dir  directory to output data split according to language
--D, --deduped-dir      directory for output from deduper
--R, --raw-dir          directory to output raw files
--i, --crawl-id         CommonCrawl ID of the crawl as given in the form YEAR_WEEK
--H, --hash-table-dir   hash table for the deduper to read from disk
--l, --languagesfile    file which specifies which languages to run the deduper on
--c, --config           custom configeration file
--j, --jobs             number of simultaneous jobs to run for GNU parallel
---progress             if selected GNU parallel will display progress
---sshloginfile         ssh file for GNU parallel
+-h, --help                  display help
+-u, --crawl-url             url to download the wet.paths.gz file for a given crawl
+-b, --batch-size            number of files in one crawl
+-d, --download-dir          directory with downloaded data
+-M, --monolingual-dir       directory to output data split according to language
+-D, --deduped-dir           directory for output from deduper
+-R, --raw-dir               directory to output raw files
+-i, --crawl-id              CommonCrawl ID of the crawl as given in the form YEAR_WEEK
+-H, --hash-table-dir        hash table for the deduper to read from disk
+-p, --previous-deduped-dir  directory containing existing deduplicated files
+-l, --languagesfile         file which specifies which languages to run the deduper on
+-c, --config                custom configeration file
+-j, --jobs                  number of simultaneous jobs to run for GNU parallel
+--progress                  if selected GNU parallel will display progress
+--sshloginfile              ssh file for GNU parallel
 EOF
 }
 
@@ -52,8 +53,8 @@ parse_args() {
 
     # Parse arguments. Taken from
     # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash.
-    local SHORT=hu:b:d:M:D:R:l:j:c:H:i:
-    local LONG=help,crawl-url:,batch_size:,download-dir:,monolingual-dir:,deduped-dir:,raw-dir:,crawl-id:,hash-table-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
+    local SHORT=hu:b:d:M:D:R:l:j:c:H:p:i:
+    local LONG=help,crawl-url:,batch_size:,download-dir:,monolingual-dir:,deduped-dir:,raw-dir:,crawl-id:,hash-table-dir:,previous-deduped-dir:,languagesfile:,sshloginfile:,jobs:,config:,progress
 
     # -temporarily store output to be able to check for errors
     # -activate advanced mode getopt quoting e.g. via “--options”
@@ -102,6 +103,10 @@ parse_args() {
                 ;;
             -H|--hash-table)
                 HASH_TABLE_DIR="$2"
+                shift 2
+                ;;
+            -p|--previous-deduped-dir)
+                PREVIOUS_DEDUPED_DIR="$2"
                 shift 2
                 ;;
             -l|--languagesfile)

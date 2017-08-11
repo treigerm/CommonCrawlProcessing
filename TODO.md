@@ -1,3 +1,5 @@
+- Upload of 2017_17 raw files to AWS is not finished yet, also english raw files aren't finished
 - Create deduped files for all minor languages that are not present yet
 - Update english deduped files
 - Copy the English language trie on AWS S3
+- Compare Uli's LSI method to Christian's URL matching for parallel corpus extraction

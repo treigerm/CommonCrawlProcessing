@@ -6,8 +6,10 @@
 - 2016_30 raw non-english
 - 2017_17 experiments with extracting parallel text:
   * `/fs/zisa0/commoncrawl/2017_17/db`: CommonCrawl Index DB as described [here](https://github.com/ModernMT/DataCollection/blob/master/metadata/metadata.md).
-  * `/fs/zisa0/commoncrawl/2017_17/baseline`: Files for running the [ModernMT baseline](https://github.com/ModernMT/DataCollection/blob/master/baseline/baseline.md) for parallel corpus extraction. It contains sentence aligned text for `lv-en` all other language pairs are only partially finished.
+  * `/fs/zisa0/commoncrawl/2017_17/baseline`: Files for running the [ModernMT baseline](https://github.com/ModernMT/DataCollection/blob/master/baseline/baseline.md) for parallel corpus extraction. It contains sentence aligned text for `lv-en`; all other language pairs are only partially finished.
   * `/fs/zisa0/commoncrawl/2017_17/lsi`: Results of running Ulrich Germann's [LSI](http://aclweb.org/anthology/W/W16/W16-2368.pdf).
+- deduped data from `/fs/nas/heithrun0/commoncrawl/deduped/en`, resharded with sharder from [here](https://github.com/kpu/preprocess)
+- deduped data files for ca, el, et, is, nl, pt, ro, sk, sl, sv
 
 ## /fs/freyja0/commoncrawl
 
@@ -51,3 +53,6 @@
 
 - contains RocksDB Index data for all crawls from 2012 to 2015_40 + 2016_50; used in the parallel corpus extraction pipeline
 
+## /fs/zisa0/tim
+
+- `/fs/zisa0/tim/bin/xz`: version 5.2.3 of XZ Utils which supports multithreading.

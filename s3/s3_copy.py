@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# ngrams//fs/nas/eikthyrnir0/tim/cc/deduped/all_years/de/deduped/de.deduped.xz
-
 import argparse
 import boto3
 from boto3.s3.transfer import TransferConfig

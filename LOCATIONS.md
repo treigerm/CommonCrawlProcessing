@@ -6,7 +6,7 @@
 - 2016_30 raw non-english
 - 2017_17 experiments with extracting parallel text:
   * `/fs/zisa0/commoncrawl/2017_17/db`: CommonCrawl Index DB as described [here](https://github.com/ModernMT/DataCollection/blob/master/metadata/metadata.md).
-  * `/fs/zisa0/commoncrawl/2017_17/baseline`: Files for running the [ModernMT baseline](https://github.com/ModernMT/DataCollection/blob/master/baseline/baseline.md) for parallel corpus extraction. It contains sentence aligned text for `lv-en`; all other language pairs are only partially finished.
+  * `/fs/zisa0/commoncrawl/2017_17/baseline`: Files for running the [ModernMT baseline](https://github.com/ModernMT/DataCollection/blob/master/baseline/baseline.md) for parallel corpus extraction. It contains sentence aligned text for `lv-en` at `/fs/zisa0/commoncrawl/2017_17/baseline/lv_en/lv-en.sent`.All other language pairs are only partially finished.
   * `/fs/zisa0/commoncrawl/2017_17/lsi`: Results of running Ulrich Germann's [LSI](http://aclweb.org/anthology/W/W16/W16-2368.pdf).
 - deduped data from `/fs/nas/heithrun0/commoncrawl/deduped/en`, resharded with sharder from [here](https://github.com/kpu/preprocess)
 - deduped data files for ca, el, et, is, nl, pt, ro, sk, sl, sv

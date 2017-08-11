@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # TODO: Make it possible to hand options to parallel as string.
-# TODO: Add automated tests.
 
 # Testing:
+# TODO: Add automated tests.
 # Run batch setup but only use the first n batches.
 # Then run the downloadsplit.
 # Then run the concatenator.
-# TODO: Do the same but with batch size as large as usually (around 352)
 
 # Exit on error.
 set -e
@@ -141,7 +140,7 @@ check_raw_opts() {
 }
 
 create_raw() {
-    # TODO: How to handle english data?
+    # TODO: Implement collecting the raw data into several batches.
     check_raw_opts
 
     echo ""

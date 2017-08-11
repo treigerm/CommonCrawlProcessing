@@ -24,7 +24,7 @@ export SCRIPTDIR
 # Locations of executables.
 SETUP_BIN=${SCRIPTDIR}/setup.sh
 DOWNLOADSPLIT_BIN=${SCRIPTDIR}/downloadsplit.sh
-UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/unsafe_dedupe_hash_table.sh
+UNSAFE_DEDUPE_BIN=${SCRIPTDIR}/dedupe_hash_table.sh
 CONCAT_RAW_BIN=${SCRIPTDIR}/concat_raw.sh
 
 
@@ -109,10 +109,6 @@ check_dedupe_opts() {
 
 dedupe() {
     # TODO: Implement sharding capability.
-    # NOTE: Create different function for that.
-    # NOTE: Pseudo code for sharder:
-    # Get all monolingual out and pipe it into sharder
-    # use parallel to shard different files on different machines
 
     if [[ -z "${HASH_TABLE_DIR}" ]]; then
         local SRC_HASH_TABLE="/dev/null"
@@ -129,8 +125,8 @@ dedupe() {
     echo ""
     echo "Creating deduped files.."
     cat "${LANGUAGES}" | \
-        parallel --env SCRIPTDIR --env PREVIOUS_DEDUPED_DIR ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} \
-                 ${RAW_FILE} ${DEDUPED_DIR} {} ${SRC_HASH_TABLE} ${OUT_HASH_TABLE}
+        parallel --env SCRIPTDIR ${PARALLEL_OPTIONS} ${UNSAFE_DEDUPE_BIN} \
+                 ${RAW_FILE} ${DEDUPED_DIR} {} ${SRC_HASH_TABLE} ${OUT_HASH_TABLE} ${PREVIOUS_DEDUPED_DIR}
 }
 
 ####################################################################################################

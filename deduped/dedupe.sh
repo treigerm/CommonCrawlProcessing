@@ -21,10 +21,10 @@ if [[ -f ${DONEFILE} ]]; then
     exit 0
 fi
 
-if [[ -f ${DEDUPEDFILE} ]]; then
-    xz -cd "${INFILE}" | ${DEDUPE_BIN} "${PREVIOUS_DEDUPED}" | xz -c > "${OUTFILE}"
+if [[ -f ${PREVIOUS_DEDUPED} ]]; then
+    /fs/zisa0/tim/bin/xz -T8 -cd "${INFILE}" | ${DEDUPE_BIN} "${PREVIOUS_DEDUPED}" | /fs/zisa0/tim/bin/xz -T8 -c > "${OUTFILE}"
 else
-    xz -cd "${INFILE}" | ${DEDUPE_BIN} /dev/null | xz -c > "${OUTFILE}"
+    /fs/zisa0/tim/bin/xz -T8 -cd "${INFILE}" | ${DEDUPE_BIN} /dev/null | /fs/zisa0/tim/bin/xz -T8 -c > "${OUTFILE}"
 fi
 
 touch "${DONEFILE}"
